@@ -1,50 +1,9 @@
 \documentclass[conference]{IEEEtran}
-\usepackage{blindtext, graphicx}
-\usepackage{hyperref}
-
-% *** GRAPHICS RELATED PACKAGES ***
-%
-\ifCLASSINFOpdf
-  % \usepackage[pdftex]{graphicx}
-  % declare the path(s) where your graphic files are
-  % \graphicspath{{../pdf/}{../jpeg/}}
-  % and their extensions so you won't have to specify these with
-  % every instance of \includegraphics
-  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
-\else
-  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
-  % will default to the driver specified in the system graphics.cfg if no
-  % driver is specified.
-  % \usepackage[dvips]{graphicx}
-  % declare the path(s) where your graphic files are
-  % \graphicspath{{../eps/}}
-  % and their extensions so you won't have to specify these with
-  % every instance of \includegraphics
-  % \DeclareGraphicsExtensions{.eps}
-\fi
-% graphicx was written by David Carlisle and Sebastian Rahtz. It is
-% required if you want graphics, photos, etc. graphicx.sty is already
-% installed on most LaTeX systems. The latest version and documentation can
-% be obtained at: 
-% http://www.ctan.org/tex-archive/macros/latex/required/graphics/
-% Another good source of documentation is "Using Imported Graphics in
-% LaTeX2e" by Keith Reckdahl which can be found as epslatex.ps or
-% epslatex.pdf at: http://www.ctan.org/tex-archive/info/
-%
-% latex, and pdflatex in dvi mode, support graphics in encapsulated
-% postscript (.eps) format. pdflatex in pdf mode supports graphics
-% in .pdf, .jpeg, .png and .mps (metapost) formats. Users should ensure
-% that all non-photo figures use a vector format (.eps, .pdf, .mps) and
-% not a bitmapped formats (.jpeg, .png). IEEE frowns on bitmapped formats
-% which can result in "jaggedy"/blurry rendering of lines and letters as
-% well as large increases in file sizes.
-%
-% You can find documentation about the pdfTeX application at:
-% http://www.tug.org/applications/pdftex
+\usepackage{blindtext, graphicx, hyperref, amsfonts, listings, bm}
 
 \hyphenation{op-tical net-works semi-conduc-tor}
 \begin{document}
-\title{Rating-based Product Recommendation by Collaborative Filtering}
+\title{Product Recommendation by Rating-based Collaborative Filtering using Apache Spark}
 
 \author{\IEEEauthorblockN{Songxiao Zhang}
 \IEEEauthorblockA{Courant Institute of Mathematical\\
@@ -65,9 +24,9 @@ sm4971@nyu.edu}}
 
 \begin{abstract}
 
-What determines a good recommendation system?  In the modern society in which electronic commerce or E-commerce is becoming more and more popular and relevant, this becomes an interesting and potentially profitable question.  The main purpose of this project, is for us to explore whether or not we can create a solid recommendation system based on users reviewing certain products and giving these products a high rating.  To accomplish this goal we will be using collaborative filtering, which is a technique commonly used for recommender systems.
+What determines a good recommendation system?  In the modern society in which electronic commerce or E-commerce is becoming more and more popular and relevant, this becomes an interesting and potentially profitable question.  The main purpose of this project, is for us to explore whether or not we can create a solid recommendation system based on users reviewing certain products and giving these products a high rating.  To accomplish this goal we will be using collaborative filtering, which is a technique commonly used for recommendation systems.
 
-There are two approaches to collaborative filtering (CF), namely memory-based CF and model-based CF (Breese et al. 1998). Memory-based CF systems utilize an original, entire user-item rating matrix to generate predictions (Resnick et al. 1994), while model-based CF methods recommend items by first developing a descriptive model of user ratings based on a user-item matrix via different machine learning approaches such as Bayesian network and clustering. The generated model is then used for future prediction about user preferences (Breese et al. 1998). In this paper, we will be looking into these two approaches and evaluating which approach works better for our problem. 
+There are two approaches to collaborative filtering (CF), namely memory-based CF and model-based CF \cite{Breese}. Memory-based CF systems utilizes an original and entire user-item rating matrix to generate predictions \cite{Resnick}. Model-based CF methods on the other hand, recommend items by first developing a descriptive model of user ratings based on an user-item matrix via different machine learning approaches such as Bayesian network and clustering. This generated model is then used for future prediction about the user's preferences \cite{Breese}. In this paper, we will be mainly looking into the model-based collaborative filtering approach and evaluating if the approach works well for our problem. 
 
 \end{abstract}
 
@@ -79,15 +38,17 @@ collaborative filtering, memory-based CF, model-based CF, recommendation system.
 \section{Introduction}
 
 When consumers shop and browse on big E-commerce sites such as Amazon, they are prompted with other products that they may be interested in.  These products are recommended based on either the consumers search query, or on the consumers previously purchased products.  Amazon even has recommendation systems based on the idea of “Frequently Bought Together” and “Customers Who Bought This Item Also Bought” for whatever product the consumer is currently looking at.  
-But what if we want to create a recommendation system that is based on a consumer reviewing a product and rating that product highly.  To be clearer we will consider a specific product “A” as a starting point.  A consumer Bill has reviewed and rated product “A” with five stars.  The next step will be finding all the other users who have given product “A” five stars.  Then all of the products in which these other users have rated five stars will be returned as the recommendation to consumer Bill for review product “A” highly.  (Trimming the returned recommendation list?)
+But what if we want to create a recommendation system that is based on a consumer reviewing a product and rating that product highly.  To be clearer we will consider a specific product “A” as a starting point.  A consumer Bill has reviewed and rated product “A” with five stars.  The next step will be finding all the other users who have given product “A” five stars.  Then all of the products in which these other users have rated five stars will be returned as the recommendation to consumer Bill for review product “A” highly.
 
-This ideology is based on a technique called collaborative filtering.  Collaborative filtering (CF) is a technique that is highly used for recommender systems.  There are two approaches towards collaborative filtering: memory-based CF and model-based CF (Breese et al. 1998).  Memory-based CF systems utilize an original, entire user-item rating matrix to generate predictions (Resnick et al. 1994), while model-based CF methods recommend items by first developing a descriptive model of user ratings based on a user-item matrix via different machine learning approaches such as Bayesian network and clustering. The generated model is then used for future prediction about user preferences (Breese et al. 1998). In this paper we will discuss and evaluate these two approaches and the results we achieve for our problem.
+This ideology is based on a technique called collaborative filtering.  Collaborative filtering is a technique that is highly used for recommendation systems.  As mentioned in the abstract, there are two approaches towards collaborative filtering: memory-based collaborative filtering and model-based collaborative \cite{Breese}.  Memory-based CF systems utilize an original, entire user-item rating matrix to generate predictions \cite{Resnick}, while model-based CF methods recommend items by first developing a descriptive model of user ratings based on a user-item matrix via different machine learning approaches such as Bayesian network and clustering. The generated model is then used for future prediction about user preferences \cite{Breese}.  In our specific analysis, we will be using Spark's MLlib library which supports collaborative filtering, namely the model-based algorithm called Alternating Least Squares (ALS).  The ALS model-based collaborative filtering technique learns a small set of latent factors which describes users and products in the data.  These latent factors can then be used to predict missing entries and recommend new products to users.
 
-For this paper, we will only consider review data from Amazon.com and Yelp.com (maybe best buy if we get it).  The data will be collected in bulk and will be preprocessed and used accordingly.  We will process the data so that for each review, we will have the reviewers ID, the review ID, the product ID,  the date, and the rating for the product.
-
+For this paper, we will only consider review data from Amazon.com and Yelp.com.  The data will be collected in bulk and will be preprocessed and used accordingly.  We will process the data so that for each review, we will have the reviewer (or user) ID, the product ID, and the rating for the product.
 
 \section{Motivation}
 
+Apache Spark is a new open source cluster computing framework. Spark is fast and a good general engine for large-scale data processing. Spark is said to run programs up to 100x faster than Hadoop MapReduce in memory, or 10x faster on disk \cite{ApacheSpark}. We want to explore how production recommendation can be done by collaborative filtering in rating based e-commerce systems in Spark. We want to investigate the speed and performance and see if it can be integrated to a real-time big data system. 
+
+As one of libraries of Spark, MLlib is a scalable machine learning engine that consists of common learning algorithms and utilities, including classification, regression, clustering, collaborative filtering, dimensionality reduction, as well as lower-level optimization primitives and higher-level pipeline APIs. In MLlib, collaborative filtering is implemented by alternating least squares (ALS), which has been implemented in many machine learning libraries and widely studied and used in both academia and industry. We will see if ALS is the best candidate for product recommendation scenario. 
 
 \section{Related Work}
 
@@ -148,47 +109,124 @@ Firstly, we created tables for each data set using Hive with only the specific c
 
 \subsection{Data Analysis Using Collaborative Filtering}
 
-We will be using Spark and their MLlib to run collaborative filtering.
+We used the MLlib library in Spark to run collaborative filtering. Spark MLlib implements a model-based collaborative filtering algorithm called Alternating Least Squares (ALS). ALS models the rating matrix (R) as the multiplication of low-rank user (U) and product (V) factors.  
+
+% http://www.quuxlabs.com/blog/2010/09/matrix-factorization-a-simple-tutorial-and-implementation-in-python/
+
+Let $\boldsymbol{R}$ of size $|U| \times |V|$ be the matrix that contains all the ratings that the users have assigned to the products or businesses. Also, we assume that we would like to discover $K$ latent features. Our task, then, is to find two metrics matrices $\boldsymbol{P}$ (a $|U| \times K$ matrix) and $\boldsymbol{Q}$ (a $|V| \times K$ matrix) such that their product approximates $\boldsymbol{R}$
+
+$$ \boldsymbol{R \approx P \times Q^T = \hat{R}} $$
+
+In this way, each row of $\boldsymbol{P}$ would represent the strength of the associations between a user and the features. Similarly, each row of $\boldsymbol{Q}$ would represent the strength of the associations between an item and the features. To get the prediction of a rating of an item $d_j$ by $u_i$, we can calculate the dot product of the two vectors corresponding to $u_i$ and $d_j$
+
+$$ \hat{r}_{ij} = p^T_i q_j = \sum_{k=1}^{k}p_{ik} q_{kj} $$
+
+Now, we have to find a way to obtain $\boldsymbol{P}$ and $\boldsymbol{Q}$. One way to approach this problem is the first intialize the two matrices with some values, calculate how `different’ their product is to $\boldsymbol{M}$, and then try to minimize this difference iteratively. Such a method is called gradient descent, aiming at finding a local minimum of the difference.
+
+The difference here, usually called the error between the estimated rating and the real rating, can be calculated by the following equation for each user-item pair
+
+$$ e^2_{ij} = (r_{ij} - \hat{r}_{ij})^2 = (r_{ij} - \sum_{k=1}^{K}p_{ik} q_{kj})^2 $$
+
+ALS learns these factors by minimizing the reconstruction error of the observed ratings. The unknown ratings can subsequently be computed by multiplying these factors. In this way, companies can recommend products based on the predicted ratings and increase sales and customer satisfaction.
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{image/als-illustration.png}
+\caption{An illustration of ALS}
+\end{figure}
+
+
+Based on low-rank matrix factorization, we iterate through
+
+$$U[i] = \min_{w \in \mathbb{R}^d} \sum_{j \in Nbrs(i))} (r_{ij} - w^TV^T[j])^2 + \lambda \left \| w \right \|^2_2$$
+
+
+\subsection{ALS Implementation}
+
+We will use MLlib’s ALS to train a MatrixFactorizationModel, which takes a RDD[(user, product, rating)] object as input. ALS has training parameters such as rank for matrix factors and regularization constants. To determine a good combination of the training parameters, we randomly split the data into three non-overlapping subsets, named training, test, and validation, based on the last digit of the timestamp, and cache them.  The distribution of or data for these three subsets are: 60 percent for training and 20 percent each of test and validation.  We will train multiple models based on the training set, select the best model on the validation set based on RMSE (Root Mean Squared Error), and finally evaluate the best model on the test set. We then take an input file with a specific user's ratings to the training set to make recommendations for that user. We hold the training, validation, and test sets in memory by calling cache because we need to visit them multiple times.
+
+ALS is an iterative algorithm. In each iteration, the algorithm alternatively fixes one factor matrix and solves for the other, and this process continues until it converges. MLlib features a blocked implementation of the ALS algorithm that leverages Spark’s efficient support for distributed, iterative computation. It uses native LAPACK to achieve high performance and scales to billions of ratings on commodity clusters. 
+
+MLlib's ALS algorithm has the following parameters \cite{ApacheSpark}:
+
+\begin{itemize}
+    \item numBlocks: the number of blocks used to parallelize computation (set to -1 to auto-configure).
+    \item rank: the number of latent factors in the model.
+    \item iterations: the number of iterations to run.
+    \item lambda: the regularization parameter in ALS.
+    \item implicitPrefs: specifies whether to use the explicit feedback ALS variant or one adapted for implicit feedback data.
+    \item alpha: a parameter applicable to the implicit feedback variant of ALS that governs the baseline confidence in preference observations.
+\end{itemize}
+
+The review data collected uses unique identifiers (UID) as ids for but the reviewer/user and product.  These UIDs are generally in a numeric or alpha-numeric string format that is associated weith a single entity within a given system.  For example, a sample business id (product id from our Yelp review data) is u’JVmC54M6XBrjCBim71ELtw’ and a sample user id is u’A24m0MqrLlDXvZR9b69yOA’. 
+The problem with MLlib's ALS algorithm in conjunction to our data, is that it's training function asks for Java int variables as its mapped training data, and so our alpha-numeric ids does not work without some data manipulation.  To solve this problem, hash functions were used to get an integer type in python, but the hashed value is too large and so is considered a long variable in Scala and Java which does not work for MLlib's specific parameter format.  This is because the implementation of MLlib is in Scala which uses Java underneath and both languages are strongly typed. When using Python, which is weakly typed, to run MLlib, a ClassCastException is thrown as the long variable type cannot be cast as an int variable type. Because Python has a wider integer range than Java, a larger type int was used with Python which is out of range of Java's int.
+
+The solution to this problem is to use only a number of the last digits (should really be at least 8 digits for amazon data and 6 digits for yelp data). 
+
+of the hashed values which is an integer within the range of a Java int type.
+and handle hash collisions when we found the size of the list of all ids is bigger than the size of the set of all ids. 
+
+The training, test, and validation subsets will then be used to find the best model and optimal parameters to train our data set, before applying the parameters into a specific user's ratings.
+
 
 \section{results}
 
-\subsection{Model Based Collaborative Filtering Results}
+Sample model-based Collaborative Filtering results 
 
-\subsection{Memory Based Collaborative Filtering Results}
+RMSE (validation) = 3.772036 for the model trained with rank = 16, lambda = 10.0, and numIter = 20.
+
+RMSE (validation) = 3.775062 for the model trained with rank = 16, lambda = 10.0, and numIter = 30.
+
+The best model was trained with rank = 16 and lambda = 0.1, and numIter = 20, and its RMSE on the test set is 1.486116.
+
+The best model improves the baseline by -10.12$\%$.
+
+
+\begin{lstlisting}
+\end{lstlisting}
 
 
 \section{future work}
 
+We will add more data sources (e.g., "customers also bought") to cross-validate our results and give a accuracy rating. We will investigate into more specific, latest and trending topics for product recommendation such as what is the most prevailing Computer Graphics (CG) gears for Virtual Reality (VR) lovers. 
+
 \section{Conclusion}
 
+ALS is a Machine Learning algorithms generally use many iterations. Using MLlib to do collaborative filtering based recommendations is efficient as Spark is good at doing iterative jobs, comparing to Mahout. Spark does not write to disk on every iteration like Hadoop does which makes Hadoop much slower. This advantage makes MLlib scalable running machine learning algorithms. 
 
-
+We found when developing applications using a language (Python in our case) rather than the language implementing the platform (Scala for Spark), we may encounter some incomptibility issue we mentioned in implementation section: Python int is bigger than Scala (Java) int so Java takes it as long, which does not work in ALS library as long is not casted to int automatically. So extra overhead and care need to be put on developing applications not using the language that the platform is implemented. 
 
 \section*{Acknowledgment}
 
-
-
-
-
-
+We would like to thank Professor Suzanne McIntosh advising and supervising us along this project. We'd also like to thank Dr. Julian McAuley from UCSD, Yelp Dataset Challenge board \cite{YelpDataset} and BestBuy API team who gave us dataset so we can conduct this research. Dr. Julian crawled Amazon review data before Amazon.com prevented us from web crawling. BestBuy data has no userid and productid association so we could not use their data. 
 
 
 \begin{thebibliography}{1}
 
-\bibitem{}
+\bibitem{ApacheSpark}
+Apache Spark, \url{http://spark.apache.org/}
+
+\bibitem{YelpDataset}
 Yelp Dataset Challenge, \url{https://www.yelp.com/dataset_challenge}
 
 \bibitem{Image-based}
-J. McAuley, C. Targett, J. Shi, A. van den Hengel. Image-based recommendations on styles and substitutes, SIGIR, 2015
+J. McAuley, C. Targett, J. Shi, A. van den Hengel. Image-based recommendations on styles and substitutes. SIGIR, 2015
 
 \bibitem{substitutable}
-J. McAuley, R. Pandey, J. Leskovec. Inferring networks of substitutable and complementary products, Knowledge Discovery and Data Mining, 2015
+J. McAuley, R. Pandey, J. Leskovec. Inferring networks of substitutable and complementary products. Knowledge Discovery and Data Mining, 2015
 
 \bibitem{ClusteringItems}
-M. O’Connor, J. Herlocker. Clustering Items for Collaborative Filtering, In: Proceedings of the ACM SIGIR Workshop on Recommender Systems, Berkley, USA, 25-26 August, 1999
+M. O’Connor, J. Herlocker. Clustering Items for Collaborative Filtering. In: Proceedings of the ACM SIGIR Workshop on Recommender Systems, Berkley, USA, 25-26 August, 1999
 
 \bibitem{Multi-view}
-Pradhan, L., Zhang, C., \& Chitrakar, P. (2016). Multi-view Clustering in Collaborative Filtering Based Rating Prediction. 2016 IEEE Tenth International Conference on Semantic Computing (ICSC). $doi:10.1109/icsc.2016.40$
+Pradhan, L., Zhang, C., \& Chitrakar, P. (2016). Multi-view Clustering in Collaborative Filtering Based Rating Prediction. In: 2016 IEEE Tenth International Conference on Semantic Computing (ICSC). $doi:10.1109/icsc.2016.40$
+
+\bibitem{Resnick}
+Resnick, P., Iacovou, N., Suchak, M., Bergstrom, P., and Riedl, J. (1994). Grouplens: An open architecture for collaborative filtering of netnews. In: Proceedings of the ACM 1994 Conference on Computer Supported Cooperative Work, pages 175-186, New York. ACM.
+
+\bibitem{Breese}
+Breese, J., Heckerman, D., and Kadie, C. (May, 1998). An experimental compar­ ison of collaborative  ltering methods. Technical Report MSR-TR-98-12, Microsoft Research, Red­ mond, WA.
 
 \end{thebibliography}
 
