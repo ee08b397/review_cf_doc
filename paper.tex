@@ -1,5 +1,6 @@
 \documentclass[conference]{IEEEtran}
 \usepackage{blindtext, graphicx, hyperref, amsfonts, listings, bm}
+\usepackage[export]{adjustbox}
 
 \hyphenation{op-tical net-works semi-conduc-tor}
 \begin{document}
@@ -26,7 +27,7 @@ sm4971@nyu.edu}}
 
 What determines a good recommendation system?  In the modern society in which electronic commerce or E-commerce is becoming more and more popular and relevant, this becomes an interesting and potentially profitable question.  The main purpose of this project, is for us to explore whether or not we can create a solid recommendation system based on users reviewing certain products and giving these products a high rating.  To accomplish this goal we will be using collaborative filtering, which is a technique commonly used for recommendation systems.
 
-There are two approaches to collaborative filtering (CF), namely memory-based CF and model-based CF \cite{Breese}. Memory-based CF systems utilizes an original and entire user-item rating matrix to generate predictions \cite{Resnick}. Model-based CF methods on the other hand, recommend items by first developing a descriptive model of user ratings based on an user-item matrix via different machine learning approaches such as Bayesian network and clustering. This generated model is then used for future prediction about the user's preferences \cite{Breese}. In this paper, we will be mainly looking into the model-based collaborative filtering approach and evaluating if the approach works well for our problem. 
+There are two approaches to Collaborative Filtering (CF), namely memory-based CF and model-based CF \cite{Breese}. Memory-based CF systems utilizes an original and entire user-item rating matrix to generate predictions \cite{Resnick}. Model-based CF methods on the other hand, recommend items by first developing a descriptive model of user ratings based on an user-item matrix via different machine learning approaches such as Bayesian network and clustering. This generated model is then used for future prediction about the user's preferences \cite{Breese}. In this paper, we will be mainly looking into the model-based collaborative filtering approach and evaluating if the approach works well for our problem. 
 
 \end{abstract}
 
@@ -46,9 +47,13 @@ For this paper, we will only consider review data from Amazon.com and Yelp.com. 
 
 \section{Motivation}
 
-Apache Spark is a new open source cluster computing framework. Spark is fast and a good general engine for large-scale data processing. Spark is said to run programs up to 100x faster than Hadoop MapReduce in memory, or 10x faster on disk \cite{ApacheSpark}. We want to explore how production recommendation can be done by collaborative filtering in rating based e-commerce systems in Spark. We want to investigate the speed and performance and see if it can be integrated to a real-time big data system. 
+E-commerce and online shopping has become one of the staples in our modern society culture, especially in the United States.  But there are differences between online shopping and shopping in real stores.  In a real store, the customers are able to walk around the store and quickly browse through the products available.  On the web however, users also have the ability to browse through products in specific categories, although the efficiency between online and in-person is up for debate.  But with recommendation systems, online shoppers have the added advantage of being recommended products that they may be interested in buying after certain criterias have been met.
 
-As one of libraries of Spark, MLlib is a scalable machine learning engine that consists of common learning algorithms and utilities, including classification, regression, clustering, collaborative filtering, dimensionality reduction, as well as lower-level optimization primitives and higher-level pipeline APIs. In MLlib, collaborative filtering is implemented by alternating least squares (ALS), which has been implemented in many machine learning libraries and widely studied and used in both academia and industry. We will see if ALS is the best candidate for product recommendation scenario. 
+There are many ways shoppers can be recommended products, whether it is based on items similar to what they just purchased, their purchase history, or even based on items they viewed.  The main purpose of this analytic however, is to analyze how well a recommendation system based only on products that a user has rated highly and other people who have also rated this product highly will work.  The users of this analytic may be E-commerce or online shopping websites that might be exploring to enhance their recommendation systems that will help them sell more products, show potentially hidden products, and improve the user experience on their website.  This analytic would also benefit the online shoppers as they may have a better experience when shopping online as it may make the browsing for products easier.
+
+On our personal end, this analytic gives us the opportunity to use and approach a problem with Apache Spark.  Apache Spark is a new open source cluster computing framework that is fast and a good general engine for large-scale data processing. Spark advertises that they run programs up to 100x faster than Hadoop MapReduce in memory, or 10x faster on disk \cite{ApacheSpark}. We want to explore how product recommendation can be done by collaborative filtering in rating based E-commerce systems using Spark and MLlib.
+
+MLlib, a library available in the Apache Spark,  is a scalable machine learning engine that consists of common learning algorithms and utilities including classification, regression, clustering, collaborative filtering, dimensionality reduction, as well as lower-level optimization primitives and higher-level pipeline APIs. In MLlib, collaborative filtering is implemented by alternating least squares (ALS), which has been implemented in many machine learning libraries and widely studied and used in both academia and industry. We will see if ALS is the best candidate for our product recommendation scenario. 
 
 \section{Related Work}
 
@@ -95,15 +100,15 @@ These problems make collaborative filtering hard to scale with larger data sets 
 
 \section{Design}
 
-\subsection{Data Processing}
+\subsection{Data Pre-processing}
 
-The review data we will be using for our analysis are from Yelp and Amazon.  The Yelp data was collected from the Yelp Data Set Challenge and Dr. Julian McAuley provided us with the Amazon review data.  The data was originally in JSON format.  Because the data collected are not in the proper structure in which we require, some data processing is required using Pig, Hive and Python.  Hive allows us to create data tables and remove columns in which we consider to be unnecessary.
+The review data we will be using for our analysis are from Yelp and Amazon.  The Yelp data was collected from the Yelp Data Set Challenge and Dr. Julian McAuley provided us with the Amazon review data.  The data was originally in JSON format.  Because the data collected are not in the proper structure in which we require, some data processing is required using Hive and Python.  Hive allows us to create data tables and remove columns in which we consider to be unnecessary.
 
-Firstly, we created tables for each data set using Hive with only the specific columns necessary for our analysis. These  attribute columns are: User ID, Review ID, Rating, Date, and Product ID. The data must then be loaded, filtered, and processed accordingly with Pig so that we have a format which is easy to be used for our data analysis.
+Firstly, we created tables for each data set using Hive with only the specific columns necessary for our analysis. These  attribute columns are: User ID, Review ID, Rating, Date, and Product ID. The data must then be loaded, filtered, and processed accordingly so that we have a format which is easy to be used for our data analysis.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.5\textwidth]{image/design_diagram}
+\includegraphics[width=0.5\textwidth]{image/design_v2}
 \caption{Design Diagram on Data Processing to Analysis}
 \end{figure}
 
@@ -142,9 +147,13 @@ Based on low-rank matrix factorization, we iterate through
 $$U[i] = \min_{w \in \mathbb{R}^d} \sum_{j \in Nbrs(i))} (r_{ij} - w^TV^T[j])^2 + \lambda \left \| w \right \|^2_2$$
 
 
+We use Root Mean Squared Error (RMSE) to select the best model, because RMSE amplifies and severely punishes large errors comparing to Mean Absolute Error (MAE). 
+
+$$RMSE = \sqrt{\frac{1}{n} \sum_{i=1}^{n}(y_i - \hat{y_i})^2}$$
+
 \subsection{ALS Implementation}
 
-We will use MLlib’s ALS to train a MatrixFactorizationModel, which takes a RDD[(user, product, rating)] object as input. ALS has training parameters such as rank for matrix factors and regularization constants. To determine a good combination of the training parameters, we randomly split the data into three non-overlapping subsets, named training, test, and validation, based on the last digit of the timestamp, and cache them.  The distribution of or data for these three subsets are: 60 percent for training and 20 percent each of test and validation.  We will train multiple models based on the training set, select the best model on the validation set based on RMSE (Root Mean Squared Error), and finally evaluate the best model on the test set. We then take an input file with a specific user's ratings to the training set to make recommendations for that user. We hold the training, validation, and test sets in memory by calling cache because we need to visit them multiple times.
+We will use MLlib’s ALS to train a MatrixFactorizationModel, which takes a RDD[(user, product, rating)] object as input. ALS has training parameters such as rank for matrix factors and regularization constants. To determine a good combination of the training parameters, we randomly split the data into three non-overlapping subsets, named training, test, and validation, based on the last digit of the timestamp, and cache them.  The distribution of or data for these three subsets are: 60 percent for training and 20 percent each for testing and validation.  We will train multiple models based on the training set, select the best model on the validation set based on RMSE (Root Mean Squared Error), and finally evaluate the best model on the test set. We then take an input file with a specific user's ratings to the training set to make recommendations for that user. We hold the training, validation, and test sets in memory by calling cache because we need to visit them multiple times.
 
 ALS is an iterative algorithm. In each iteration, the algorithm alternatively fixes one factor matrix and solves for the other, and this process continues until it converges. MLlib features a blocked implementation of the ALS algorithm that leverages Spark’s efficient support for distributed, iterative computation. It uses native LAPACK to achieve high performance and scales to billions of ratings on commodity clusters. 
 
@@ -162,34 +171,50 @@ MLlib's ALS algorithm has the following parameters \cite{ApacheSpark}:
 The review data collected uses unique identifiers (UID) as ids for but the reviewer/user and product.  These UIDs are generally in a numeric or alpha-numeric string format that is associated weith a single entity within a given system.  For example, a sample business id (product id from our Yelp review data) is u’JVmC54M6XBrjCBim71ELtw’ and a sample user id is u’A24m0MqrLlDXvZR9b69yOA’. 
 The problem with MLlib's ALS algorithm in conjunction to our data, is that it's training function asks for Java int variables as its mapped training data, and so our alpha-numeric ids does not work without some data manipulation.  To solve this problem, hash functions were used to get an integer type in python, but the hashed value is too large and so is considered a long variable in Scala and Java which does not work for MLlib's specific parameter format.  This is because the implementation of MLlib is in Scala which uses Java underneath and both languages are strongly typed. When using Python, which is weakly typed, to run MLlib, a ClassCastException is thrown as the long variable type cannot be cast as an int variable type. Because Python has a wider integer range than Java, a larger type int was used with Python which is out of range of Java's int.
 
-The solution to this problem is to use only a number of the last digits (should really be at least 8 digits for amazon data and 6 digits for yelp data). 
+The solution to this problem is to use only a number of the last digits of the hashed UIDs that will fit the scale of our data and the remaining number we will use will be smaller than the maximum value of a Java int type.  For our analytic, we used only the last five digits of the hashed value to represent our alpha-numeric UID strings.   
 
-of the hashed values which is an integer within the range of a Java int type.
-and handle hash collisions when we found the size of the list of all ids is bigger than the size of the set of all ids. 
-
-The training, test, and validation subsets will then be used to find the best model and optimal parameters to train our data set, before applying the parameters into a specific user's ratings.
+After we were able to successfully run the ALS algorithms, the training, test, and validation subsets will be used to find the best model and optimal parameters trained on our data set.  This best model and optimal parameters will then be applied to a specific user's ratings taken from the existing data set and we would get a list of product ids that will be recommended to our user.  We then use the metadata for each respective data source and get a list of information about the recommended products such as the product name and location specifically for yelp results, and just the name of the product for amazon results.
 
 
 \section{results}
 
-Sample model-based Collaborative Filtering results 
+\begin{figure}
+  \centering
+  \includegraphics[width=.48\textwidth, clip=true, trim = 0cm 18cm 7cm 1cm]{image/yelp_results}
+  \caption{Yelp results}
+  \label{fig:yelp.cmd.results}
+\end{figure}
 
-RMSE (validation) = 3.772036 for the model trained with rank = 16, lambda = 10.0, and numIter = 20.
+\begin{figure}
+  \centering
+  \includegraphics[width=.48\textwidth, clip=true, trim = 0cm 13cm 15cm 1cm]{image/amazon_results_crop}
+  \caption{Amazon results}
+  \label{fig:amazon.cmd.results}
+\end{figure}
 
-RMSE (validation) = 3.775062 for the model trained with rank = 16, lambda = 10.0, and numIter = 30.
 
-The best model was trained with rank = 16 and lambda = 0.1, and numIter = 20, and its RMSE on the test set is 1.486116.
+Sample model-based Collaborative Filtering evaluation results: 
 
-The best model improves the baseline by -10.12$\%$.
+\texttt{RMSE (validation) = 3.772036 for the model trained with rank = 16, lambda = 10.0, and numIter = 20.}
 
+\texttt{RMSE (validation) = 3.775062 for the model trained with rank = 16, lambda = 10.0, and numIter = 30.}
+
+\texttt{The best model was trained with rank = 16 and lambda = 0.1, and numIter = 20, and its RMSE on the test set is 1.486116.}
+
+\texttt{The best model improves the baseline by -10.12$\%$.}
+
+Based on our results in Figure~\ref{fig:yelp.cmd.results} on Page~\pageref{fig:yelp.cmd.results}, we can see that the user's ratings are mostly in Nevada and Arizona.  These two States are very close together.  The results for this input are mostly in the Nevada and Arizona region also.  Based on intuition, we can say that it makes sense that these results are in the same locations because people who rate a place highly in Nevada would most likely rate other places in Nevada and Arizona highly as well.  It is also safe to say that if someone rates places mostly in Nevada and Arizona, they would probably want to be recommended for places in Nevada and Arizona as it is probably close to home.  So the our recommendations for Yelp data based solely on location should be considered good.  Now lets analyze the actual type of places that are being recommended.  Let's take a look at rating num
 
 \begin{lstlisting}
 \end{lstlisting}
 
 
 \section{future work}
+Recommendation systems is an interesting and useful topic and is definitely entitled to more research and optimization.  Given enough data and data components, there is potentially a lot of expansion room for our analytic.  
 
-We will add more data sources (e.g., "customers also bought") to cross-validate our results and give a accuracy rating. We will investigate into more specific, latest and trending topics for product recommendation such as what is the most prevailing Computer Graphics (CG) gears for Virtual Reality (VR) lovers. 
+Given more data and data components (e.g., Amazon has a "customers also bought" section), we may be able to cross-validate our results and give a better accuracy rating for our analysis.  Also if we are given easy access to any data, then we can use ourselves as the test subjects and see if the results of our analytic are indeed "good".  Also other collaborative filtering algorithms can be experimented with to see the difference in accuracy of the results from each algorithm.  
+
+These collaborative filtering algorithms can also be applied to other fields of research as well or made more specific such as determining recommendations for movies based on movies that a user has bought or watched and rated highly.  We can take the analytics we used in this paper, and apply it to other types of data sets as well.  We can use this analytic to investigate into more specific and new trending topics for product recommendation such as what is the most prevailing Computer Graphics (CG) gears for Virtual Reality (VR) lovers.  The amount of different applications this analytic has is countless and the potential for growth is also very big.
 
 \section{Conclusion}
 
@@ -197,9 +222,11 @@ ALS is a Machine Learning algorithms generally use many iterations. Using MLlib 
 
 We found when developing applications using a language (Python in our case) rather than the language implementing the platform (Scala for Spark), we may encounter some incomptibility issue we mentioned in implementation section: Python int is bigger than Scala (Java) int so Java takes it as long, which does not work in ALS library as long is not casted to int automatically. So extra overhead and care need to be put on developing applications not using the language that the platform is implemented. 
 
+But in conclusion, we were able to get recommendation outputs with RMSE of around 3.0 for Amazon data and 3.9 for Yelp data.  The recommended outputs intuitively makes sense although the RMSE values may be slightly high.  However, it isn't for us to say that even though the outputs make sense in congruence to the inputs, that our results are necessarily "good".  To know for certain of the "goodness" of results, we would have to consult with the actual user who has rated these products.  And we would have to clearly define that if the user expresses interest in the product, then it should be considered a good result.  This is because we can assume that users will not buy everything they may be interested in or are recommended online.  
+
 \section*{Acknowledgment}
 
-We would like to thank Professor Suzanne McIntosh advising and supervising us along this project. We'd also like to thank Dr. Julian McAuley from UCSD, Yelp Dataset Challenge board \cite{YelpDataset} and BestBuy API team who gave us dataset so we can conduct this research. Dr. Julian crawled Amazon review data before Amazon.com prevented us from web crawling. BestBuy data has no userid and productid association so we could not use their data. 
+We would like to thank Professor Suzanne McIntosh advising and supervising us along this project. NYU HPC for helping us with any problems we faced with running our data on their cluster. We'd also like to thank Dr. Julian McAuley from UCSD, Yelp Dataset Challenge board \cite{YelpDataset} and BestBuy API team who gave us access to their data so we can conduct this research. Dr. Julian crawled Amazon review data before Amazon.com started to prevent web crawling. BestBuy data consists of only the average ratings for each product and so does not have individual reviews and ratings with their respective userids, so we could not use their data. 
 
 
 \begin{thebibliography}{1}
