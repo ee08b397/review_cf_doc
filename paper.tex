@@ -106,6 +106,10 @@ The review data we will be using for our analysis are from Yelp and Amazon.  The
 
 Firstly, we created tables for each data set using Hive with only the specific columns necessary for our analysis. These  attribute columns are: User ID, Review ID, Rating, Date, and Product ID. The data must then be loaded, filtered, and processed accordingly so that we have a format which is easy to be used for our data analysis.
 
+The Yelp review data set after Hive filtering consisted of the following categories that we thought was potentially useable in our proeject: votes, \textbf{userID}, reviewID, \textbf{stars}, date, text, type, \textbf{businessID}.  The items in bold were the fields we considered while training and applying the ALS collaborative filtering algorithm on our Yelp data set.  The amount of data we used for Yelp was 1.9GB of review data, and 66MB of metadata.
+
+The Amazon review data set after Hive filtering consisted of the following categories that we thought we can potentially use in our project:\textbf{reviewerID}, \textbf{asin} (Amazon Standard Identification Number), reviewerName, helpful, \textbf{stars}, reviewText, \textbf{overall} (rating), summary, unixReviewTime, and reviewTime.  The items in bold were the fields we considered while training and applying the ALS collaborative filtering algorithm on our Amazon data set.  We had a lot more review data from Amazon than Yelp.  In total, there was 6.68GB of review data and 1.2GB of metadata used from Amazon.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.5\textwidth]{image/design_v2}
@@ -160,15 +164,15 @@ ALS is an iterative algorithm. In each iteration, the algorithm alternatively fi
 MLlib's ALS algorithm has the following parameters \cite{ApacheSpark}:
 
 \begin{itemize}
-    \item numBlocks: the number of blocks used to parallelize computation (set to -1 to auto-configure).
-    \item rank: the number of latent factors in the model.
-    \item iterations: the number of iterations to run.
-    \item lambda: the regularization parameter in ALS.
-    \item implicitPrefs: specifies whether to use the explicit feedback ALS variant or one adapted for implicit feedback data.
-    \item alpha: a parameter applicable to the implicit feedback variant of ALS that governs the baseline confidence in preference observations.
+    \item {\bf numBlocks}: the number of blocks used to parallelize computation (set to -1 to auto-configure).
+    \item {\bf rank}: the number of latent factors in the model.
+    \item {\bf iterations}: the number of iterations to run.
+    \item {\bf lambda}: the regularization parameter in ALS.
+    \item {\bf implicitPrefs}: specifies whether to use the explicit feedback ALS variant or one adapted for implicit feedback data.
+    \item {\bf alpha}: a parameter applicable to the implicit feedback variant of ALS that governs the baseline confidence in preference observations.
 \end{itemize}
 
-The review data collected uses unique identifiers (UID) as ids for but the reviewer/user and product.  These UIDs are generally in a numeric or alpha-numeric string format that is associated weith a single entity within a given system.  For example, a sample business id (product id from our Yelp review data) is u’JVmC54M6XBrjCBim71ELtw’ and a sample user id is u’A24m0MqrLlDXvZR9b69yOA’. 
+The review data collected uses unique identifiers (UID) as ids for but the reviewer/user and product.  These UIDs are generally in a numeric or alpha-numeric string format that is associated weith a single entity within a given system.  For example, a sample business id (product id from our Yelp review data) is {\tt u’JVmC54M6XBrjCBim71ELtw’} and a sample user id is {\tt u’A24m0MqrLlDXvZR9b69yOA’}. 
 The problem with MLlib's ALS algorithm in conjunction to our data, is that it's training function asks for Java int variables as its mapped training data, and so our alpha-numeric ids does not work without some data manipulation.  To solve this problem, hash functions were used to get an integer type in python, but the hashed value is too large and so is considered a long variable in Scala and Java which does not work for MLlib's specific parameter format.  This is because the implementation of MLlib is in Scala which uses Java underneath and both languages are strongly typed. When using Python, which is weakly typed, to run MLlib, a ClassCastException is thrown as the long variable type cannot be cast as an int variable type. Because Python has a wider integer range than Java, a larger type int was used with Python which is out of range of Java's int.
 
 The solution to this problem is to use only a number of the last digits of the hashed UIDs that will fit the scale of our data and the remaining number we will use will be smaller than the maximum value of a Java int type.  For our analytic, we used only the last five digits of the hashed value to represent our alpha-numeric UID strings.   
@@ -185,15 +189,9 @@ After we were able to successfully run the ALS algorithms, the training, test, a
   \label{fig:yelp.cmd.results}
 \end{figure}
 
-\begin{figure}
-  \centering
-  \includegraphics[width=.48\textwidth, clip=true, trim = 0cm 13cm 15cm 1cm]{image/amazon_results_crop}
-  \caption{Amazon results}
-  \label{fig:amazon.cmd.results}
-\end{figure}
+The results we chose to look at were specific recommendation results we received when running our trained ALS model with personal rating files with user and rating data taken from our data sets.  The Yelp rating file contain thirteen of a specific user's ratings for Yelp extracted from the original yelp data set while the Amazon rating file contains eleven specific ratings from a specific Amazon user.  The rating files are kept constant throughout but the results received for the rating files vary with each run.
 
-
-Sample model-based Collaborative Filtering evaluation results: 
+Sample model-based Collaborative Filtering evaluation results for Amazon Data: 
 
 \texttt{RMSE (validation) = 3.772036 for the model trained with rank = 16, lambda = 10.0, and numIter = 20.}
 
@@ -203,7 +201,19 @@ Sample model-based Collaborative Filtering evaluation results:
 
 \texttt{The best model improves the baseline by -10.12$\%$.}
 
-Based on our results in Figure~\ref{fig:yelp.cmd.results} on Page~\pageref{fig:yelp.cmd.results}, we can see that the user's ratings are mostly in Nevada and Arizona.  These two States are very close together.  The results for this input are mostly in the Nevada and Arizona region also.  Based on intuition, we can say that it makes sense that these results are in the same locations because people who rate a place highly in Nevada would most likely rate other places in Nevada and Arizona highly as well.  It is also safe to say that if someone rates places mostly in Nevada and Arizona, they would probably want to be recommended for places in Nevada and Arizona as it is probably close to home.  So the our recommendations for Yelp data based solely on location should be considered good.  Now lets analyze the actual type of places that are being recommended.  Let's take a look at rating num
+Based on our sample results in Figure~\ref{fig:yelp.cmd.results} on Page~\pageref{fig:yelp.cmd.results} on our Yelp data, we can see that the user's ratings are mostly in Nevada and Arizona.  These two States are very close together.  The results for this input are mostly in the Nevada and Arizona region also.  Based on intuition, we can say that it makes sense that these results are in the same locations because people who rate a place highly in Nevada would most likely rate other places in Nevada and Arizona highly as well.  It is also safe to say that if someone rates places mostly in Nevada and Arizona, they would probably want to be recommended for places in Nevada and Arizona as it is probably close to home.  So the our recommendations for Yelp data based solely on location should be considered good.  Now lets analyze the actual type of places that are being recommended as seen in figure 4.  There are some places in the user test data that are chiropractic and rehabilitation locations, as well as an ice rink, clubs, and salons.  So getting massage, yoga, pubs, dance clubs, and other salons as recommendations does not seem too bad.  The luxury we have with Yelp recommendations is that it is hard to say that the user will not like the recommended place without him/her actually visiting the location.  Therefore, as long as we recommend locations in which they would be interested in going or places that contain themes or items they would be interested in, then we can confirm the "goodness" of our results.  
+
+\begin{figure}
+  \centering
+  \includegraphics[width=.48\textwidth, clip=true, trim = 0cm 3cm 15cm 1cm]{image/amazon_results_crop}
+  \caption{Amazon results}
+  \label{fig:amazon.cmd.results}
+\end{figure}
+
+
+Now let's analyze one of the Amazon.com sammple results in Figure~\ref{fig:amazon.cmd.results} on Page~\pageref{fig:amazon.cmd.results}. From the user's input data we notice makeup and woman shirts among other woman products. But this woman also seems to enjoy certain pro-shop past times, possibly hunting or shooting.  We made this assumption because of 5 star rating on the blunt darts, strobe lights, and pro shop apron. Some of the results are either woman products such as beauty products, jewelry, and woman clothes, but in there are also some pro shop items such as fishing gear and carrying cases.  But unlike Yelp data analysis, Amazon data is harder to appraise the goodness of the results intuitively.  This is because users buy all shorts of things regardless of their interests.  Also it is harder for a user to gain interest in certain products as opposed to locations from the Yelp results.  What we can say it that the resulting data was able to target women to a fair degree because of the woman products in the user's inputs.  Although there may be plenty of bad recommendations depending on what the user herself personally thinks.
+
+Because we had more data available for 
 
 \begin{lstlisting}
 \end{lstlisting}
@@ -253,7 +263,7 @@ Pradhan, L., Zhang, C., \& Chitrakar, P. (2016). Multi-view Clustering in Collab
 Resnick, P., Iacovou, N., Suchak, M., Bergstrom, P., and Riedl, J. (1994). Grouplens: An open architecture for collaborative filtering of netnews. In: Proceedings of the ACM 1994 Conference on Computer Supported Cooperative Work, pages 175-186, New York. ACM.
 
 \bibitem{Breese}
-Breese, J., Heckerman, D., and Kadie, C. (May, 1998). An experimental compar­ ison of collaborative  ltering methods. Technical Report MSR-TR-98-12, Microsoft Research, Red­ mond, WA.
+Breese, J., Heckerman, D., and Kadie, C. (May, 1998). An experimental comparison of collaborative filtering methods. Technical Report MSR-TR-98-12, Microsoft Research, Redmond, WA.
 
 \end{thebibliography}
 
